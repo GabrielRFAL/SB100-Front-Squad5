@@ -3,6 +3,8 @@ import { ChatHeader } from './components/ChatHeader';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessage } from './components/ChatMessage';
 import EvaluatorChat from './components/EvaluatorChat';
+import { useUserProfile } from './user-profile/UserProfileContext';
+import { USER_PROFILE_LABELS } from './user-profile/types';
 
 interface Chunk {
   id: string;
@@ -30,6 +32,7 @@ const initialMessages: Message[] = [
 ];
 
 export default function App() {
+  const { profileRecord, openProfileClassification } = useUserProfile();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
@@ -158,6 +161,20 @@ export default function App() {
               className={`w-full rounded-3xl border px-4 py-4 text-left text-sm font-semibold transition ${activeTab === 'avaliador' ? 'border-emerald-200 bg-emerald-50/80 text-emerald-900 shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'}`}
             >
               Chat avaliador
+            </button>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meu perfil</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {profileRecord ? USER_PROFILE_LABELS[profileRecord.profile] : 'Não classificado'}
+            </p>
+            <button
+              type="button"
+              onClick={openProfileClassification}
+              className="mt-3 min-h-10 w-full rounded-xl border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+            >
+              Alterar meu perfil
             </button>
           </div>
         </aside>

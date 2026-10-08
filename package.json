@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
+    "test:e2e": "node scripts/user-profile-browser-check.mjs",
+    "type-check": "tsc -p tsconfig.app.json"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
