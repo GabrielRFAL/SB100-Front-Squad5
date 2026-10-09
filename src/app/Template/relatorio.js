@@ -1,4 +1,38 @@
-const API_URL = 'http://localhost:8000/perguntar';
+async function getBackendBaseUrl() {
+    try {
+        const response = await fetch('/backend_url.json', { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`Resposta ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (typeof data.backend_url === 'string' && data.backend_url.trim()) {
+            return data.backend_url.trim();
+        }
+    } catch (error) {
+        console.warn('Falha ao carregar backend_url.json, usando localhost:', error);
+    }
+
+    return 'http://localhost:8000';
+}
+
+function getUserProfile() {
+    try {
+        const record = JSON.parse(localStorage.getItem('user_profile') || 'null');
+        const profiles = [
+            'produtor_rural',
+            'cooperativa',
+            'empresa',
+            'pesquisador_universitario',
+            'tecnico',
+            'instituicao_publica',
+            'visitante'
+        ];
+        return profiles.includes(record?.profile) ? record.profile : 'visitante';
+    } catch {
+        return 'visitante';
+    }
+}
 
 async function gerarRelatorio() {
     const perguntas = document.getElementById('input_perguntas').value
@@ -21,10 +55,15 @@ async function gerarRelatorio() {
     document.getElementById('content').innerHTML = '';
 
     try {
-        const response = await fetch(API_URL, {
+        const apiBaseUrl = await getBackendBaseUrl();
+        const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/perguntar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ perguntas, ground_truths: groundTruths })
+            body: JSON.stringify({
+                perguntas,
+                ground_truths: groundTruths,
+                profile: getUserProfile()
+            })
         });
 
         if (!response.ok) throw new Error('Erro na API');

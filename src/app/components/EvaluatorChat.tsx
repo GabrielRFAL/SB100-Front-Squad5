@@ -6,6 +6,8 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Loader2 } from 'lucide-react';
 import { Referencias } from './Referencias';
+import { getBackendBaseUrl } from '../backend';
+import { useUserProfile } from '../user-profile/UserProfileContext';
 
 const templateCssUrl = new URL('../Template/template.css', import.meta.url).href;
 const logoUrl = new URL('../../assets/LogoSB100-semfundo.png', import.meta.url).href;
@@ -29,28 +31,11 @@ interface EvaluationResult {
 }
 
 export default function EvaluatorChat() {
+  const { profileRecord } = useUserProfile();
   const [perguntas, setPerguntas] = useState('');
   const [groundTruths, setGroundTruths] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState<EvaluationResult[]>([]);
-  const [backendUrl, setBackendUrl] = useState<string | null>(null);
-
-  const fetchBackendUrl = async (): Promise<string> => {
-    try {
-      const response = await fetch('/backend_url.json', { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`Resposta ${response.status}`);
-      }
-      const data = await response.json();
-      if (typeof data.backend_url === 'string' && data.backend_url.trim()) {
-        return data.backend_url.trim();
-      }
-    } catch (error) {
-      console.warn('Falha ao carregar backend_url.json, usando localhost:', error);
-    }
-    return 'http://localhost:8000';
-  };
-
   const handleProcess = async () => {
     const perguntasArray = perguntas.split(';').filter(p => p.trim());
     const groundTruthsArray = groundTruths.split(';').filter(gt => gt.trim());
@@ -63,7 +48,7 @@ export default function EvaluatorChat() {
     setIsProcessing(true);
     setResults([]);
 
-    const apiBaseUrl = backendUrl ?? (await fetchBackendUrl());
+    const apiBaseUrl = await getBackendBaseUrl();
     const apiUrl = `${apiBaseUrl.replace(/\/$/, '')}/perguntar`;
 
     // Processar sequencialmente para progressivo
@@ -76,7 +61,8 @@ export default function EvaluatorChat() {
           },
           body: JSON.stringify({
             perguntas: [perguntasArray[i]],
-            ground_truths: [groundTruthsArray[i]]
+            ground_truths: [groundTruthsArray[i]],
+            profile: profileRecord?.profile ?? 'visitante',
           })
         });
 

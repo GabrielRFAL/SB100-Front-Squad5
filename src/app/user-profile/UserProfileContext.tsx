@@ -107,4 +107,3 @@ export function useUserProfile(): UserProfileContextValue {
   }
   return context;
 }
-

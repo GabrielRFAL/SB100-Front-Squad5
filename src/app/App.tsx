@@ -4,6 +4,7 @@ import { ChatHeader } from "./components/ChatHeader";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import EvaluatorChat from "./components/EvaluatorChat";
+import { getBackendBaseUrl } from "./backend";
 import { useUserProfile } from "./user-profile/UserProfileContext";
 import { USER_PROFILE_LABELS } from "./user-profile/types";
 
@@ -39,38 +40,10 @@ export default function App() {
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "avaliador">("chat");
 
-  const fetchBackendUrl = async (): Promise<string> => {
-    try {
-      const response = await fetch("/backend_url.json", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Resposta ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (
-        typeof data.backend_url === "string" &&
-        data.backend_url.trim()
-      ) {
-        return data.backend_url.trim();
-      }
-    } catch (error) {
-      console.warn(
-        "Falha ao carregar backend_url.json, usando localhost:",
-        error,
-      );
-    }
-
-    return "http://localhost:8000";
-  };
-
   useEffect(() => {
     let active = true;
 
-    fetchBackendUrl().then((url) => {
+    getBackendBaseUrl().then((url) => {
       if (active) {
         setBackendUrl(url);
       }
@@ -94,7 +67,7 @@ export default function App() {
     const agentMessageId = (Date.now() + 1).toString();
 
     try {
-      const apiBaseUrl = backendUrl ?? (await fetchBackendUrl());
+      const apiBaseUrl = backendUrl ?? (await getBackendBaseUrl());
 
       const apiUrl = `${apiBaseUrl.replace(/\/$/, "")}/perguntar/stream`;
 
@@ -105,6 +78,7 @@ export default function App() {
         },
         body: JSON.stringify({
           pergunta: text,
+          profile: profileRecord?.profile ?? "visitante",
         }),
       });
 
