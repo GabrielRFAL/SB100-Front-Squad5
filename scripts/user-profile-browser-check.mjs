@@ -83,7 +83,7 @@ await evaluate("localStorage.removeItem('user_profile')");
 await reload();
 await waitFor("document.querySelector('[role=dialog]') !== null", 'O modal não abriu no primeiro acesso.');
 await waitFor(
-  "document.activeElement?.tagName === 'H2' && document.activeElement.textContent.includes('Qual das opções')",
+  "document.activeElement?.tagName === 'H2' && document.activeElement.textContent.includes('Qual é sua principal relação')",
   'O foco inicial não foi enviado à pergunta atual.',
 );
 
@@ -91,7 +91,10 @@ await command('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 
 await command('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape' });
 assert.equal(await evaluate("document.querySelector('[role=dialog]') !== null"), true, 'Escape fechou o fluxo obrigatório.');
 
-await clickButton('Atuo diretamente na produção rural');
+await clickButton('Trabalho com produção agrícola, propriedades rurais ou cooperativas.');
+await clickButton('Produção ou gestão de uma propriedade rural.');
+await clickButton('Em uma propriedade rural própria ou administrada.');
+await clickButton('Resolver dúvidas e problemas relacionados à produção agrícola.');
 await waitFor(
   "document.activeElement?.tagName === 'H2' && document.activeElement.textContent.includes('Seu perfil foi identificado')",
   'O foco não acompanhou a tela de confirmação.',
@@ -114,15 +117,18 @@ assert.equal(await evaluate("document.querySelector('[role=dialog]') === null"),
 assert.equal(await evaluate("JSON.parse(localStorage.getItem('user_profile')).profile"), 'produtor_rural');
 
 await clickButton('Alterar meu perfil');
-await clickButton('Represento uma organização, empresa ou instituição');
+await clickButton('Trabalho com empresas, tecnologias ou serviços voltados ao agronegócio.');
 await clickButton('Voltar');
 assert.equal(
-  await evaluate("document.body.textContent.includes('Qual das opções melhor descreve sua atuação?')"),
+  await evaluate("document.body.textContent.includes('Qual é sua principal relação com o agronegócio?')"),
   true,
   'Voltar não retornou à pergunta anterior.',
 );
-await clickButton('Represento uma organização, empresa ou instituição');
-await clickButton('Empresa privada ou negócio');
+await clickButton('Trabalho com empresas, tecnologias ou serviços voltados ao agronegócio.');
+await clickButton('Desenvolvimento ou comercialização de tecnologias e soluções agrícolas.');
+await clickButton('Em uma empresa privada do agronegócio.');
+await clickButton('Conhecer tecnologias, produtos e soluções para o agronegócio.');
+await clickButton('Trabalho no desenvolvimento ou comercialização de soluções agrícolas.');
 await clickButton('Confirmar e continuar');
 assert.equal(await evaluate("JSON.parse(localStorage.getItem('user_profile')).profile"), 'empresa');
 assert.equal(await evaluate("document.body.textContent.includes('Empresa')"), true, 'A interface não sincronizou o perfil alterado.');
