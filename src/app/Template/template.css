@@ -227,6 +227,119 @@
     text-align: justify;
 }
 
+.report-markdown{
+    color: #29512c;
+    font-weight: 300;
+    margin-top: 5px;
+    text-align: justify;
+    overflow-wrap: anywhere;
+}
+
+.report-md-paragraph{
+    margin: 0 0 0.75em;
+    line-height: 1.5;
+}
+
+.report-md-paragraph:last-child{
+    margin-bottom: 0;
+}
+
+.report-md-h1,
+.report-md-h2,
+.report-md-h3{
+    color: #29512c;
+    font-weight: 700;
+    text-align: left;
+    margin: 0.9em 0 0.45em;
+}
+
+.report-md-h1{ font-size: 1.5em; }
+.report-md-h2{ font-size: 1.3em; }
+.report-md-h3{ font-size: 1.15em; }
+
+.report-md-ul,
+.report-md-ol{
+    margin: 0.5em 0 0.9em;
+    padding-left: 1.5em;
+}
+
+.report-md-ul{ list-style: disc; }
+.report-md-ol{ list-style: decimal; }
+
+.report-md-li{
+    line-height: 1.5;
+    padding-left: 0.15em;
+}
+
+.report-md-strong{
+    color: #1f3f22;
+    font-weight: 700;
+}
+
+.report-md-em{ font-style: italic; }
+
+.report-md-hr{
+    border: 0;
+    border-top: 1px solid #b9c9b8;
+    margin: 0.9em 0;
+}
+
+.report-md-code{
+    background-color: #e9eee7;
+    border-radius: 3px;
+    color: #1c7322;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.9em;
+    padding: 1px 4px;
+}
+
+.report-md-pre{
+    background-color: #263238;
+    border-radius: 5px;
+    color: #f1f5f4;
+    margin: 0.7em 0;
+    overflow-wrap: anywhere;
+    padding: 0.8em;
+    text-align: left;
+    white-space: pre-wrap;
+}
+
+.report-md-pre .report-md-code{
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+
+.report-md-table-wrapper{
+    margin: 0.8em 0;
+    overflow-x: auto;
+}
+
+.report-md-table{
+    border-collapse: collapse;
+    font-size: 0.9em;
+    text-align: left;
+    width: 100%;
+}
+
+.report-md-th,
+.report-md-td{
+    border: 1px solid #b9c9b8;
+    padding: 0.45em 0.6em;
+}
+
+.report-md-thead{ background-color: #e5efe3; }
+.report-md-th{ color: #29512c; font-weight: 700; }
+
+.report-md-blockquote{
+    border-left: 3px solid #1c7322;
+    color: #536b55;
+    font-style: italic;
+    margin: 0.8em 0;
+    padding-left: 0.8em;
+    text-align: left;
+}
+
 .resposta_esperada{
     flex: 1;
 }

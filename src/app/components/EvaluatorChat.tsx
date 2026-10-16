@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { renderToStaticMarkup } from 'react-dom/server';
+import remarkGfm from 'remark-gfm';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,6 +10,7 @@ import { Separator } from './ui/separator';
 import { Loader2 } from 'lucide-react';
 import { Referencias } from './Referencias';
 import { getBackendBaseUrl } from '../backend';
+import { readNdjsonStream, type StreamEvent } from '../streaming';
 import { useUserProfile } from '../user-profile/UserProfileContext';
 
 const templateCssUrl = new URL('../Template/template.css', import.meta.url).href;
@@ -30,6 +34,71 @@ interface EvaluationResult {
   chunks: Chunk[];
 }
 
+const normalizeChunks = (raw: unknown): Chunk[] =>
+  Array.isArray(raw)
+    ? raw.map((value: unknown) => {
+        const chunk =
+          typeof value === 'object' && value !== null
+            ? (value as Record<string, unknown>)
+            : {};
+        return {
+          id: String(chunk.id ?? `${Date.now()}-${Math.random()}`),
+          score: Number(chunk.score ?? 0),
+          file: String(chunk.file ?? 'Desconhecido'),
+          chunk_index: Number(chunk.chunk_index ?? 0),
+          preview: String(chunk.preview ?? ''),
+        };
+      })
+    : [];
+
+const normalizeReferencias = (event: StreamEvent): string[] => {
+  const raw =
+    event.referencias_principais ??
+    event.refs_principais ??
+    event.referencias ??
+    [];
+  return Array.isArray(raw)
+    ? raw.map((ref: unknown) => String(ref))
+    : typeof raw === 'string'
+      ? raw.split(/;|\n|\|/).map((ref) => ref.trim()).filter(Boolean)
+      : [];
+};
+
+const renderReportMarkdown = (markdown: string): string =>
+  renderToStaticMarkup(
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => <p className="report-md-paragraph">{children}</p>,
+        h1: ({ children }) => <h1 className="report-md-h1">{children}</h1>,
+        h2: ({ children }) => <h2 className="report-md-h2">{children}</h2>,
+        h3: ({ children }) => <h3 className="report-md-h3">{children}</h3>,
+        ul: ({ children }) => <ul className="report-md-ul">{children}</ul>,
+        ol: ({ children }) => <ol className="report-md-ol">{children}</ol>,
+        li: ({ children }) => <li className="report-md-li">{children}</li>,
+        strong: ({ children }) => <strong className="report-md-strong">{children}</strong>,
+        em: ({ children }) => <em className="report-md-em">{children}</em>,
+        hr: () => <hr className="report-md-hr" />,
+        code: ({ children }) => <code className="report-md-code">{children}</code>,
+        pre: ({ children }) => <pre className="report-md-pre">{children}</pre>,
+        table: ({ children }) => (
+          <div className="report-md-table-wrapper">
+            <table className="report-md-table">{children}</table>
+          </div>
+        ),
+        thead: ({ children }) => <thead className="report-md-thead">{children}</thead>,
+        tr: ({ children }) => <tr className="report-md-tr">{children}</tr>,
+        th: ({ children }) => <th className="report-md-th">{children}</th>,
+        td: ({ children }) => <td className="report-md-td">{children}</td>,
+        blockquote: ({ children }) => (
+          <blockquote className="report-md-blockquote">{children}</blockquote>
+        ),
+      }}
+    >
+      {markdown}
+    </ReactMarkdown>,
+  );
+
 export default function EvaluatorChat() {
   const { profileRecord } = useUserProfile();
   const [perguntas, setPerguntas] = useState('');
@@ -49,10 +118,25 @@ export default function EvaluatorChat() {
     setResults([]);
 
     const apiBaseUrl = await getBackendBaseUrl();
-    const apiUrl = `${apiBaseUrl.replace(/\/$/, '')}/perguntar`;
+    const apiUrl = `${apiBaseUrl.replace(/\/$/, '')}/perguntar/avaliador/stream`;
 
-    // Processar sequencialmente para progressivo
     for (let i = 0; i < perguntasArray.length; i++) {
+      const pergunta = perguntasArray[i];
+      const groundTruth = groundTruthsArray[i];
+      const upsertResult = (patch: Partial<EvaluationResult>) =>
+        setResults((prev) => {
+          const next = [...prev];
+          const base: EvaluationResult = next[i] ?? {
+            pergunta,
+            resposta: '',
+            ground_truth: groundTruth,
+            referencias: [],
+            chunks: [],
+          };
+          next[i] = { ...base, ...patch };
+          return next;
+        });
+
       try {
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -60,8 +144,8 @@ export default function EvaluatorChat() {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            perguntas: [perguntasArray[i]],
-            ground_truths: [groundTruthsArray[i]],
+            pergunta,
+            ground_truth: groundTruth,
             profile: profileRecord?.profile ?? 'visitante',
           })
         });
@@ -70,49 +154,46 @@ export default function EvaluatorChat() {
           throw new Error(`API retornou ${response.status}`);
         }
 
-        const data = await response.json();
-        const result = data.resultados[0];
+        if (!response.body) {
+          throw new Error('A API não retornou um stream.');
+        }
 
-        const chunks: Chunk[] = Array.isArray(result.chunks)
-          ? result.chunks.map((chunk: any) => ({
-              id: String(chunk.id ?? `${Date.now()}-${Math.random()}`),
-              score: Number(chunk.score ?? 0),
-              file: String(chunk.file ?? 'Desconhecido'),
-              chunk_index: Number(chunk.chunk_index ?? 0),
-              preview: String(chunk.preview ?? '')
-            }))
-          : [];
+        let resposta = '';
+        const estado = { erro: null as string | null };
 
-        const referenciasRaw = result.referencias_principais ?? result.refs_principais ?? result.referencias ?? [];
-        const referencias: string[] = Array.isArray(referenciasRaw)
-          ? referenciasRaw.map((ref: any) => String(ref))
-          : typeof referenciasRaw === 'string'
-            ? referenciasRaw.split(/;|\n|\|/).map((ref: string) => ref.trim()).filter(Boolean)
-            : [];
+        await readNdjsonStream(response.body, (event) => {
+          if (event.tipo === 'token') {
+            resposta += String(event.conteudo ?? '');
+            upsertResult({ resposta });
+          } else if (event.tipo === 'metadata') {
+            upsertResult({
+              resposta: resposta || 'Sem resposta disponível.',
+              referencias: normalizeReferencias(event),
+              chunks: normalizeChunks(event.chunks),
+              hallucination_flag:
+                event.hallucination_flag != null
+                  ? Number(event.hallucination_flag)
+                  : undefined,
+            });
+          } else if (event.tipo === 'erro') {
+            estado.erro = String(event.mensagem ?? 'Erro desconhecido');
+          }
+        });
 
-        const hallucinationFlag = result.hallucination_flag != null
-          ? Number(result.hallucination_flag)
-          : undefined;
-
-        const evaluationResult: EvaluationResult = {
-          pergunta: result.pergunta,
-          resposta: result.resposta,
-          ground_truth: result.ground_truth,
-          referencias,
-          hallucination_flag: hallucinationFlag,
-          chunks
-        };
-
-        setResults(prev => [...prev, evaluationResult]);
-      } catch (error: any) {
-        console.error('Erro ao processar pergunta:', error);
-        setResults(prev => [...prev, {
-          pergunta: perguntasArray[i],
-          resposta: `Erro: ${error.message}`,
-          ground_truth: groundTruthsArray[i],
+        if (estado.erro !== null) {
+          throw new Error(estado.erro);
+        }
+        if (!resposta) {
+          upsertResult({ resposta: 'Sem resposta disponível.' });
+        }
+      } catch (error: unknown) {
+        console.error('Erro ao processar pergunta.');
+        upsertResult({
+          resposta: `Erro: ${error instanceof Error ? error.message : String(error)}`,
           referencias: [],
-          chunks: []
-        }]);
+          chunks: [],
+          hallucination_flag: undefined,
+        });
       }
     }
 
@@ -162,7 +243,7 @@ export default function EvaluatorChat() {
           <div class="container_resposta">
             <div class="resposta_model">
               <div class="title_resposta">Resposta SB100</div>
-              <p>${result.resposta}</p>
+              <div class="report-markdown">${renderReportMarkdown(result.resposta)}</div>
             </div>
             <div class="resposta_esperada">
               <div class="title_esperada">Resposta Esperada</div>
@@ -277,7 +358,85 @@ export default function EvaluatorChat() {
                     <div>
                       <Badge variant="outline" className="mb-2">Resposta Gerada</Badge>
                       <div className="bg-slate-50 border rounded-lg p-3">
-                        <p className="text-slate-800">{result.resposta}</p>
+                        <div className="text-slate-800 leading-relaxed">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => (
+                                <p className="mb-4 last:mb-0 leading-7">{children}</p>
+                              ),
+                              h1: ({ children }) => (
+                                <h1 className="text-2xl font-bold text-emerald-900 mb-4 mt-2">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className="text-xl font-bold text-emerald-900 mb-3 mt-5">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-lg font-semibold text-emerald-800 mb-2 mt-4">
+                                  {children}
+                                </h3>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-6 mb-4 space-y-1">{children}</ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-6 mb-4 space-y-1">{children}</ol>
+                              ),
+                              li: ({ children }) => <li className="leading-7">{children}</li>,
+                              strong: ({ children }) => (
+                                <strong className="font-semibold text-gray-900">{children}</strong>
+                              ),
+                              em: ({ children }) => <em className="italic">{children}</em>,
+                              hr: () => <hr className="my-5 border-gray-200" />,
+                              code: ({ children }) => (
+                                <code className="bg-gray-100 text-emerald-800 px-1.5 py-0.5 rounded text-sm font-mono">
+                                  {children}
+                                </code>
+                              ),
+                              pre: ({ children }) => (
+                                <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto mb-4 text-sm">
+                                  {children}
+                                </pre>
+                              ),
+                              table: ({ children }) => (
+                                <div className="w-full overflow-x-auto mb-5 rounded-xl border border-gray-200">
+                                  <table className="w-full min-w-[500px] border-collapse text-sm">
+                                    {children}
+                                  </table>
+                                </div>
+                              ),
+                              thead: ({ children }) => (
+                                <thead className="bg-emerald-50">{children}</thead>
+                              ),
+                              tr: ({ children }) => (
+                                <tr className="border-b border-gray-200 last:border-b-0">
+                                  {children}
+                                </tr>
+                              ),
+                              th: ({ children }) => (
+                                <th className="px-4 py-3 text-left font-semibold text-emerald-900 border-r border-gray-200 last:border-r-0">
+                                  {children}
+                                </th>
+                              ),
+                              td: ({ children }) => (
+                                <td className="px-4 py-3 text-gray-700 border-r border-gray-200 last:border-r-0">
+                                  {children}
+                                </td>
+                              ),
+                              blockquote: ({ children }) => (
+                                <blockquote className="border-l-4 border-emerald-500 pl-4 my-4 text-gray-600 italic">
+                                  {children}
+                                </blockquote>
+                              ),
+                            }}
+                          >
+                            {result.resposta}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     </div>
                     <div>
