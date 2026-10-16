@@ -49,7 +49,13 @@ export function UserProfileModal({
 
   const question = getCurrentQuestion(flow);
   const isConfirmation = flow.pendingProfile !== null;
-  const step = flow.currentQuestionId === 'role' ? 1 : 2;
+  const step = {
+    role: 1,
+    activity: 2,
+    context: 3,
+    objective: 4,
+    confirmation: 5,
+  }[flow.currentQuestionId];
 
   const chooseOption = (optionId: string) => {
     const nextFlow = answerCurrentQuestion(flow, optionId);
@@ -91,13 +97,13 @@ export function UserProfileModal({
             Vamos conhecer seu perfil
           </DialogTitle>
           <DialogDescription id="profile-dialog-description" className="text-sm leading-6 text-slate-600">
-            Responda até duas perguntas rápidas. Não solicitamos nem armazenamos dados pessoais.
+            Queremos conhecer um pouco mais sobre você! Responda algumas perguntas rápidas para que nosso assistente agrícola possa oferecer respostas mais adequadas ao seu perfil e às suas necessidades.
           </DialogDescription>
         </DialogHeader>
 
         <div className="px-5 py-5 sm:px-7 sm:py-6" aria-live="polite">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            {isConfirmation ? 'Confirmação' : `Etapa ${step} de 2`}
+            {isConfirmation ? 'Confirmação' : `Etapa ${step} de 5`}
           </p>
 
           {isConfirmation && flow.pendingProfile ? (
