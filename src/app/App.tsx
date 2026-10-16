@@ -1,9 +1,12 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ChatHeader } from "./components/ChatHeader";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import EvaluatorChat from "./components/EvaluatorChat";
+import { getBackendBaseUrl } from "./backend";
+import { useUserProfile } from "./user-profile/UserProfileContext";
+import { USER_PROFILE_LABELS } from "./user-profile/types";
 
 interface Chunk {
   id: string;
@@ -31,43 +34,16 @@ const initialMessages: Message[] = [
 ];
 
 export default function App() {
+  const { profileRecord, openProfileClassification } = useUserProfile();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "avaliador">("chat");
 
-  const fetchBackendUrl = async (): Promise<string> => {
-    try {
-      const response = await fetch("/backend_url.json", {
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error(`Resposta ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (
-        typeof data.backend_url === "string" &&
-        data.backend_url.trim()
-      ) {
-        return data.backend_url.trim();
-      }
-    } catch (error) {
-      console.warn(
-        "Falha ao carregar backend_url.json, usando localhost:",
-        error,
-      );
-    }
-
-    return "http://localhost:8000";
-  };
-
   useEffect(() => {
     let active = true;
 
-    fetchBackendUrl().then((url) => {
+    getBackendBaseUrl().then((url) => {
       if (active) {
         setBackendUrl(url);
       }
@@ -91,7 +67,7 @@ export default function App() {
     const agentMessageId = (Date.now() + 1).toString();
 
     try {
-      const apiBaseUrl = backendUrl ?? (await fetchBackendUrl());
+      const apiBaseUrl = backendUrl ?? (await getBackendBaseUrl());
 
       const apiUrl = `${apiBaseUrl.replace(/\/$/, "")}/perguntar/stream`;
 
@@ -102,6 +78,7 @@ export default function App() {
         },
         body: JSON.stringify({
           pergunta: text,
+          profile: profileRecord?.profile ?? "visitante",
         }),
       });
 
@@ -418,6 +395,20 @@ export default function App() {
               }`}
             >
               Chat avaliador
+            </button>
+          </div>
+
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Meu perfil</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {profileRecord ? USER_PROFILE_LABELS[profileRecord.profile] : 'Não classificado'}
+            </p>
+            <button
+              type="button"
+              onClick={openProfileClassification}
+              className="mt-3 min-h-10 w-full rounded-xl border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-emerald-800 transition-colors hover:border-emerald-300 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+            >
+              Alterar meu perfil
             </button>
           </div>
         </aside>
