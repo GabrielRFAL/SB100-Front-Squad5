@@ -5,6 +5,7 @@ import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import EvaluatorChat from "./components/EvaluatorChat";
 import { getBackendBaseUrl } from "./backend";
+import { useResponseMode } from "./response-mode/ResponseModeContext";
 import { useUserProfile } from "./user-profile/UserProfileContext";
 import { USER_PROFILE_LABELS } from "./user-profile/types";
 
@@ -35,6 +36,7 @@ const initialMessages: Message[] = [
 
 export default function App() {
   const { profileRecord, openProfileClassification } = useUserProfile();
+  const { responseMode } = useResponseMode();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
@@ -55,6 +57,10 @@ export default function App() {
   }, []);
 
   const handleSendMessage = async (text: string) => {
+    // Ponto de integração futuro: incluir responseMode somente após o backend
+    // definir e aceitar esse campo no contrato de /perguntar.
+    void responseMode;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text,

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { ResponseModeSelector } from './ResponseModeSelector';
+
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
@@ -18,11 +20,15 @@ export function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-3">
+      <div className="mb-3 flex justify-end">
+        <ResponseModeSelector />
+      </div>
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          aria-label="Digite sua pergunta"
           placeholder="Digite sua pergunta..."
           className="w-full rounded-full border border-slate-200 bg-slate-100 px-5 py-3 pr-28 text-sm text-slate-900 shadow-sm transition-colors focus:border-slate-400 focus:bg-white focus:outline-none"
           disabled={disabled}
