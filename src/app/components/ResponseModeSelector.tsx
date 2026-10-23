@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useResponseMode } from '../response-mode/ResponseModeContext';
 import { RESPONSE_MODE_CONFIG, RESPONSE_MODES, type ResponseMode } from '../response-mode/types';
 
-export function ResponseModeSelector() {
+interface ResponseModeSelectorProps {
+  compact?: boolean;
+}
+
+export function ResponseModeSelector({ compact = false }: ResponseModeSelectorProps) {
   const { responseMode, setResponseMode } = useResponseMode();
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(RESPONSE_MODES.indexOf(responseMode));
@@ -71,11 +75,13 @@ export function ResponseModeSelector() {
         aria-labelledby="response-mode-label response-mode-value"
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleTriggerKeyDown}
-        className="flex min-h-10 w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+        className={`flex min-h-9 items-center justify-between gap-2 whitespace-nowrap rounded-full text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${compact ? 'w-auto bg-transparent px-3 py-1.5 hover:bg-slate-200' : 'w-full border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300'}`}
       >
         <span className="min-w-0">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Modo de resposta</span>
-          <span id="response-mode-value" className="block truncate text-sm font-semibold text-slate-900">{selectedConfig.label}</span>
+          {!compact && <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Modo de resposta</span>}
+          <span id="response-mode-value" className={`block truncate font-semibold text-slate-900 ${compact ? 'text-xs sm:text-sm' : 'text-sm'}`}>
+            {selectedConfig.label}
+          </span>
         </span>
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -84,7 +90,7 @@ export function ResponseModeSelector() {
         <div
           role="listbox"
           aria-labelledby="response-mode-label"
-          className="absolute bottom-full left-0 z-20 mb-2 w-full min-w-[280px] rounded-2xl border border-slate-200 bg-white p-2 shadow-lg sm:right-0 sm:left-auto sm:w-[340px]"
+          className="absolute right-0 bottom-full z-20 mb-2 w-[min(340px,calc(100vw-2rem))] min-w-[280px] rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
         >
           {RESPONSE_MODES.map((mode, index) => {
             const config = RESPONSE_MODE_CONFIG[mode];
