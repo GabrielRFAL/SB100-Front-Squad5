@@ -57,10 +57,6 @@ export default function App() {
   }, []);
 
   const handleSendMessage = async (text: string) => {
-    // Ponto de integração futuro: incluir responseMode somente após o backend
-    // definir e aceitar esse campo no contrato de /perguntar.
-    void responseMode;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       text,
@@ -85,6 +81,7 @@ export default function App() {
         body: JSON.stringify({
           pergunta: text,
           profile: profileRecord?.profile ?? "visitante",
+          response_mode: responseMode,
         }),
       });
 

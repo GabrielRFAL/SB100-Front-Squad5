@@ -6,7 +6,7 @@ Interface web do Agente SB100, construída como uma SPA em React e TypeScript. A
 
 - `src/main.tsx` inicializa a aplicação e o provider de perfil.
 - `src/app/App.tsx` organiza o cabeçalho, a navegação e os modos Chat padrão e Chat avaliador.
-- O Chat padrão envia uma pergunta ao endpoint `POST /perguntar` e apresenta resposta, referências e indicadores retornados pelo backend.
+- O Chat padrão envia pergunta, perfil e modo de resposta (`response_mode`: `deterministic`, `moderate` ou `creative`) ao endpoint `POST /perguntar/stream`, e apresenta resposta, referências e indicadores retornados pelo backend. O modo padrão é `deterministic`; o backend configura a temperatura correspondente.
 - O Chat avaliador envia perguntas e respostas esperadas em lote para o mesmo endpoint.
 - No primeiro acesso, `src/app/user-profile/` identifica o perfil por uma árvore de decisão. O resultado fica no `localStorage`, na chave `user_profile`, e pode ser alterado pela opção **Alterar meu perfil**.
 - A URL base do backend é lida em runtime de `public/backend_url.json`. Se o arquivo estiver ausente ou inválido, o frontend tenta `http://localhost:8000`.
