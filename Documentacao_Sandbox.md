@@ -21,11 +21,10 @@ npm install
 Copie `.env.example` para `.env` e ajuste, se necessário:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000
 VITE_ENABLE_SANDBOX=true
 ```
 
-`VITE_ENABLE_SANDBOX` habilita a rota em deployments não locais. Em local, o sandbox fica habilitado automaticamente. Variáveis `VITE_*` são públicas no navegador; não coloque credenciais nelas. Sem `VITE_API_BASE_URL`, a aplicação usa `public/backend_url.json` e, em caso de falha, `http://localhost:8000`.
+`VITE_ENABLE_SANDBOX` habilita a rota em deployments não locais. Em local, o sandbox fica habilitado automaticamente. A URL da API é resolvida pelo mesmo mecanismo usado pelo chat principal: `public/backend_url.json`, com fallback para `http://localhost:8000`. Variáveis `VITE_*` são públicas no navegador; não coloque credenciais nelas.
 
 ## Como executar e acessar
 
@@ -78,12 +77,11 @@ Passo a passo:
 
 1. Crie uma branch, por exemplo `sandbox-vercel`, e envie-a para o repositório.
 2. Na Vercel, abra **Settings → Environment Variables**.
-3. Cadastre `VITE_API_BASE_URL` com a URL HTTPS da API no ambiente **Preview**.
-4. Cadastre `VITE_ENABLE_SANDBOX=true` somente no ambiente **Preview**.
-5. Crie um deployment da branch ou abra um pull request.
-6. Acesse `https://URL-DO-PREVIEW.vercel.app/sandbox`.
-7. Em **Settings → Deployment Protection**, habilite **Vercel Authentication** para proteger os deployments de Preview.
-8. Teste a aplicação principal e o sandbox antes do merge.
+3. Cadastre `VITE_ENABLE_SANDBOX=true` somente no ambiente **Preview**.
+4. Crie um deployment da branch ou abra um pull request.
+5. Acesse `https://URL-DO-PREVIEW.vercel.app/sandbox`.
+6. Em **Settings → Deployment Protection**, habilite **Vercel Authentication** para proteger os deployments de Preview.
+7. Teste a aplicação principal e o sandbox antes do merge.
 
 Depois do merge na `main`, se `VITE_ENABLE_SANDBOX` não estiver configurada em **Production**, a rota de produção exibirá a mensagem de sandbox indisponível. Para publicar também no domínio de produção, configure essa variável em **Production** conscientemente e mantenha a proteção de acesso adequada.
 

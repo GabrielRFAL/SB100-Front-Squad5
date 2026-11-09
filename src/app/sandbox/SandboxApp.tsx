@@ -75,7 +75,9 @@ export default function SandboxApp() {
       setLogs([...sampleLogs]);
     };
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL?.trim() || await getBackendBaseUrl();
+      // Mantém o sandbox alinhado ao mesmo resolvedor usado pelo chat principal.
+      // Em produção, localhost apontaria para o computador do usuário, não para o backend.
+      const baseUrl = await getBackendBaseUrl();
       const result = await runSandboxGeneration({
         baseUrl,
         request: buildSandboxRequest({ pergunta: question, profile, temperature }),
