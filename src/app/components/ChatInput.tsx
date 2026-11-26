@@ -5,9 +5,10 @@ import { ResponseModeSelector } from './ResponseModeSelector';
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
+  suggestions?: string[];
 }
 
-export function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
+export function ChatInput({ onSendMessage, disabled = false, suggestions = [] }: ChatInputProps) {
   const [input, setInput] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -19,7 +20,8 @@ export function ChatInput({ onSendMessage, disabled = false }: ChatInputProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-3">
+    <div className="mx-auto max-w-4xl px-4 py-3">
+      {suggestions.length > 0 && <div className="mb-3 flex gap-2 overflow-x-auto pb-1" aria-label="Sugestões de perguntas">{suggestions.map((suggestion) => <button key={suggestion} type="button" disabled={disabled} onClick={() => onSendMessage(suggestion)} className="shrink-0 rounded-full border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 disabled:opacity-50">{suggestion}</button>)}</div>}
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"

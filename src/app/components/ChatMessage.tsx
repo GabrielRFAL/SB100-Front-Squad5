@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Check, Download, Share2, ThumbsDown, ThumbsUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -25,6 +26,7 @@ interface Chunk {
 interface ChatMessageProps {
   message: string;
   isUser: boolean;
+  isInitial?: boolean;
   chunks?: Chunk[];
   referencias_principais?: string[];
   hallucination_flag?: number;
@@ -36,14 +38,24 @@ const truncatePreview = (preview: string, maxLength = 120) => {
     : preview;
 };
 
+function createShareUrl(message: string): string {
+  const bytes = new TextEncoder().encode(message);
+  let binary = '';
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return `${window.location.origin}${window.location.pathname}#resposta=${btoa(binary)}`;
+}
+
 export function ChatMessage({
   message,
   isUser,
+  isInitial = false,
   chunks,
   referencias_principais,
   hallucination_flag
 }: ChatMessageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   if (isUser) {
     return (
@@ -57,6 +69,27 @@ export function ChatMessage({
         </div>
       </div>
     );
+  }
+
+  async function shareResponse() {
+    const url = createShareUrl(message);
+    if (navigator.share) {
+      await navigator.share({ title: 'Resposta do Agente SB100', text: 'Resposta compartilhada do SB100', url });
+      setShareStatus('Link compartilhado.');
+      return;
+    }
+    await navigator.clipboard?.writeText(url);
+    setShareStatus('Link copiado para a área de transferência.');
+  }
+
+  function downloadResponse() {
+    const url = URL.createObjectURL(new Blob([message], { type: 'text/markdown;charset=utf-8' }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'resposta-sb100.md';
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setShareStatus('Resposta baixada.');
   }
 
   return (
@@ -311,6 +344,19 @@ export function ChatMessage({
             </DialogContent>
           </Dialog>
         )}
+        {!isInitial && <>
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 px-2 pt-3">
+            <button type="button" onClick={() => void shareResponse()} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><Share2 className="h-4 w-4" aria-hidden="true" />Compartilhar</button>
+            <button type="button" onClick={downloadResponse} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><Download className="h-4 w-4" aria-hidden="true" />Baixar resposta</button>
+            {shareStatus && <span className="text-xs text-emerald-700" role="status">{shareStatus}</span>}
+          </div>
+          <div className="mt-4 flex items-center gap-2 px-2 text-xs text-slate-500" aria-live="polite">
+            <span>Esta resposta ajudou?</span>
+            <button type="button" aria-label="Sim, esta resposta ajudou" aria-pressed={feedback === 'positive'} onClick={() => setFeedback('positive')} className={`rounded-full p-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${feedback === 'positive' ? 'bg-emerald-100 text-emerald-800' : 'hover:bg-slate-100'}`}><ThumbsUp className="h-4 w-4" aria-hidden="true" /></button>
+            <button type="button" aria-label="Não, esta resposta não ajudou" aria-pressed={feedback === 'negative'} onClick={() => setFeedback('negative')} className={`rounded-full p-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 ${feedback === 'negative' ? 'bg-rose-100 text-rose-800' : 'hover:bg-slate-100'}`}><ThumbsDown className="h-4 w-4" aria-hidden="true" /></button>
+            {feedback && <span className="inline-flex items-center gap-1 text-emerald-700"><Check className="h-3 w-3" aria-hidden="true" />Registrado nesta sessão</span>}
+          </div>
+        </>}
       </div>
     </div>
   );
