@@ -12,6 +12,7 @@ export function ResponseModeSelector({ compact = false }: ResponseModeSelectorPr
   const { responseMode, setResponseMode } = useResponseMode();
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(RESPONSE_MODES.indexOf(responseMode));
+  const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedConfig = RESPONSE_MODE_CONFIG[responseMode];
@@ -23,6 +24,29 @@ export function ResponseModeSelector({ compact = false }: ResponseModeSelectorPr
   useEffect(() => {
     if (isOpen) optionRefs.current[focusedIndex]?.focus();
   }, [focusedIndex, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !containerRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const close = () => {
     setIsOpen(false);
@@ -65,7 +89,7 @@ export function ResponseModeSelector({ compact = false }: ResponseModeSelectorPr
   };
 
   return (
-    <div className="relative min-w-0">
+    <div ref={containerRef} className="relative min-w-0">
       <span className="sr-only" id="response-mode-label">Modo de resposta</span>
       <button
         ref={triggerRef}
@@ -75,11 +99,11 @@ export function ResponseModeSelector({ compact = false }: ResponseModeSelectorPr
         aria-labelledby="response-mode-label response-mode-value"
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex min-h-9 items-center justify-between gap-2 whitespace-nowrap rounded-full text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${compact ? 'w-auto bg-transparent px-3 py-1.5 hover:bg-slate-200' : 'w-full border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300'}`}
+        className={`flex min-h-9 items-center justify-between gap-2 whitespace-nowrap rounded-full text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${compact ? 'w-8 justify-center bg-transparent px-1 py-1.5 hover:bg-slate-200 sm:w-auto sm:justify-between sm:px-3' : 'w-full border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300'}`}
       >
         <span className="min-w-0">
           {!compact && <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Modo de resposta</span>}
-          <span id="response-mode-value" className={`block truncate font-semibold text-slate-900 ${compact ? 'text-xs sm:text-sm' : 'text-sm'}`}>
+          <span id="response-mode-value" className={`block truncate font-semibold text-slate-900 ${compact ? 'hidden text-xs sm:block sm:text-sm' : 'text-sm'}`}>
             {selectedConfig.label}
           </span>
         </span>
@@ -90,7 +114,7 @@ export function ResponseModeSelector({ compact = false }: ResponseModeSelectorPr
         <div
           role="listbox"
           aria-labelledby="response-mode-label"
-          className="absolute right-0 bottom-full z-20 mb-2 w-[min(340px,calc(100vw-2rem))] min-w-[280px] rounded-2xl border border-slate-200 bg-white p-2 shadow-lg"
+          className="fixed bottom-32 left-1/2 z-50 w-[min(340px,calc(100vw-2rem))] min-w-0 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl sm:absolute sm:bottom-full sm:left-auto sm:right-0 sm:mb-2 sm:translate-x-0 sm:min-w-[280px]"
         >
           {RESPONSE_MODES.map((mode, index) => {
             const config = RESPONSE_MODE_CONFIG[mode];

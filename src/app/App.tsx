@@ -4,13 +4,14 @@ import { ChatHeader } from "./components/ChatHeader";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import EvaluatorChat from "./components/EvaluatorChat";
-import { Plus, CircleHelp, FlaskConical, History, MessageSquare } from "lucide-react";
+import { Plus, Circle, CircleHelp, FlaskConical, History, MessageSquare, PanelLeft, UserRound, X } from "lucide-react";
 import { getBackendBaseUrl } from "./backend";
 import { useResponseMode } from "./response-mode/ResponseModeContext";
 import { useUserProfile } from "./user-profile/UserProfileContext";
 import { USER_PROFILE_LABELS } from "./user-profile/types";
 import { readConversationHistory, writeConversationHistory, type ConversationRecord, type HistoryMessage } from "./conversation-history";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/ui/dialog";
+import logo from "../assets/LogoSB100-semfundo.png";
 
 interface Chunk {
   id: string;
@@ -43,6 +44,8 @@ export default function App() {
     return readConversationHistory(window.localStorage);
   });
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
+  const [isMobileProfileOpen, setIsMobileProfileOpen] = useState(false);
   const suggestions = [
     "Como interpretar uma análise de solo?",
     "Qual a recomendação de calagem para citros?",
@@ -54,6 +57,7 @@ export default function App() {
     setActiveConversationId(`conversation-${Date.now()}`);
     setActiveTab("chat");
     setIsHistoryOpen(false);
+    setIsMobileNavigationOpen(false);
   };
 
   useEffect(() => {
@@ -91,6 +95,7 @@ export default function App() {
     setActiveConversationId(conversation.id);
     setActiveTab("chat");
     setIsHistoryOpen(false);
+    setIsMobileNavigationOpen(false);
   };
 
   useEffect(() => {
@@ -417,7 +422,34 @@ export default function App() {
       <ChatHeader isLoading={isLoading} />
 
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:px-8">
-        <aside className="order-2 w-full rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm lg:order-1 lg:w-72">
+        <div className="relative z-30 flex items-center justify-between lg:hidden">
+          <div className="relative">
+            <button type="button" aria-label="Abrir navegação" aria-expanded={isMobileNavigationOpen} onClick={() => { setIsMobileNavigationOpen((value) => !value); setIsMobileProfileOpen(false); }} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-emerald-300 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
+              {isMobileNavigationOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <PanelLeft className="h-5 w-5" aria-hidden="true" />}
+            </button>
+            {isMobileNavigationOpen && <div className="absolute left-0 top-12 w-[min(18rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+              {!isHistoryOpen ? <>
+                <div className="mb-2 flex items-center justify-between px-2"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Navegação</p><span className="text-xs text-slate-400">SB100</span></div>
+                <button type="button" onClick={startNewConversation} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"><Plus className="h-4 w-4" aria-hidden="true" />Nova conversa</button>
+                <button type="button" onClick={() => { setActiveTab('chat'); setIsMobileNavigationOpen(false); }} className={`mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold ${activeTab === 'chat' ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700 hover:bg-slate-50'}`}><MessageSquare className="h-4 w-4" aria-hidden="true" />Chat principal</button>
+                <button type="button" onClick={() => { setActiveTab('avaliador'); setIsMobileNavigationOpen(false); }} className={`flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold ${activeTab === 'avaliador' ? 'bg-emerald-50 text-emerald-900' : 'text-slate-700 hover:bg-slate-50'}`}><FlaskConical className="h-4 w-4" aria-hidden="true" />Chat avaliador</button>
+                <a href="/sandbox" className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><FlaskConical className="h-4 w-4" aria-hidden="true" />Sandbox experimental</a>
+                <button type="button" onClick={() => setIsHistoryOpen(true)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50"><History className="h-4 w-4" aria-hidden="true" />Histórico da sessão</button>
+              </> : <>
+                <div className="flex items-center gap-2 border-b border-slate-100 px-2 pb-3"><button type="button" onClick={() => setIsHistoryOpen(false)} className="rounded-lg p-1 text-slate-500 hover:bg-slate-100" aria-label="Voltar para navegação"><PanelLeft className="h-4 w-4" aria-hidden="true" /></button><h3 className="text-sm font-bold text-slate-900">Histórico da sessão</h3></div>
+                {historyQuestions.length === 0 ? <p className="p-3 text-xs leading-relaxed text-slate-500">Suas perguntas aparecerão aqui depois da primeira conversa.</p> : <div className="mt-2 max-h-64 space-y-1 overflow-y-auto">{historyQuestions.map(({ conversation, message }) => <button key={`mobile-${conversation.id}-${message.id}`} type="button" onClick={() => openConversation(conversation)} className="w-full rounded-xl p-2 text-left text-xs font-medium leading-relaxed text-slate-700 hover:bg-emerald-50">{message.text}</button>)}</div>}
+              </>}
+            </div>}
+          </div>
+          <div className="flex min-w-0 items-center gap-2 px-2"><img src={logo} alt="Logo SB100" className="h-7 w-auto shrink-0" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-900">Agente SB100</p><p className="truncate text-[10px] text-slate-500">Assistente científico</p></div></div>
+          <div className="relative flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-900" role="status"><Circle className="h-2 w-2 fill-current text-emerald-600" aria-hidden="true" />Online</span>
+            <button type="button" aria-label="Abrir perfil do usuário" aria-expanded={isMobileProfileOpen} onClick={() => { setIsMobileProfileOpen((value) => !value); setIsMobileNavigationOpen(false); }} className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-emerald-300 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"><UserRound className="h-5 w-5" aria-hidden="true" /></button>
+            {isMobileProfileOpen && <div className="absolute right-0 top-12 w-56 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Meu perfil</p><p className="mt-2 text-sm font-semibold text-slate-900">{profileRecord ? USER_PROFILE_LABELS[profileRecord.profile] : 'Não classificado'}</p><button type="button" onClick={() => { openProfileClassification(); setIsMobileProfileOpen(false); }} className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-emerald-800 hover:border-emerald-300 hover:bg-emerald-50">Alterar meu perfil</button></div>}
+          </div>
+        </div>
+
+        <aside className="order-2 hidden w-full rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm lg:order-1 lg:block lg:w-72">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-slate-500">
               Modo

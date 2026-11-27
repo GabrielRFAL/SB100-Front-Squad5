@@ -8,7 +8,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ isLoading, children }: ChatHeaderProps) {
   return (
-    <header className="border-b border-slate-200 bg-white shadow-sm">
+    <header className="hidden border-b border-slate-200 bg-white shadow-sm lg:block">
       <div className="max-w-4xl mx-auto px-6 py-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
